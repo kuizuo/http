@@ -1,0 +1,18 @@
+{
+  "name": "kz-http",
+  "version": "0.1.0",
+  "description": "An HTTP class library based on axios",
+  "main": "index.js",
+  "scripts": {
+    "build": "tsc"
+  },
+  "author": "kuizuo",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^0.21.1",
+    "axios-retry": "^3.1.9"
+  },
+  "devDependencies": {
+    "typescript": "^4.3.5"
+  }
+}
