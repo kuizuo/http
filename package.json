@@ -1,8 +1,8 @@
 {
   "name": "kz-http",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "An HTTP class library based on axios",
-  "main": "index.js",
+  "main": "dist/index.js",
   "scripts": {
     "build": "tsc"
   },
@@ -14,5 +14,10 @@
   },
   "devDependencies": {
     "typescript": "^4.3.5"
-  }
+  },
+  "keywords": [
+    "node",
+    "axios",
+    "http"
+  ]
 }

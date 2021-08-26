@@ -3,23 +3,24 @@
 ## 安装
 
 ```
-npm i @kuizuo/kz-http
+npm i kz-http -S
 ```
 
 ## 测试
 
-```
-let http = New Http()
+```js
+import Http from 'kz-http';
+
+let http = new Http();
 
 http.get('https://www.example.com').then((res) => {
-    console.log(res);
+  console.log(res);
 });
 ```
 
 ## 解决什么
 
-- Node环境下自动封装响应中的Set-Cookie，供下个请求使用
-- http请求失败，自动重试
-- 自动补全referer和orgin参数
+- Node 环境下自动封装响应中的 Set-Cookie，供下个请求使用
+- http 请求失败，自动重试
+- 自动补全 referer 和 orgin 参数
 - 禁止重定向
-

@@ -36,7 +36,7 @@ export interface Response<T = any> {
   request?: any
 }
 
-export class Http {
+export default class Http {
   public instance: AxiosInstance
   public auto: boolean = false // 自动补全协议头
   public cookies: object = {}
