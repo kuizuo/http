@@ -6,6 +6,7 @@ import axios, {
 } from 'axios'
 import * as http from 'http'
 import * as https from 'https'
+import * as tunnel from 'tunnel'
 import * as urllib from 'url'
 import axiosRetry from 'axios-retry'
 
@@ -41,13 +42,13 @@ export default class Http {
   public auto: boolean = false // 自动补全协议头
   public cookies: object = {}
   public headers: Header = {} // 自带协议头  后续都必须要带上
-  public redirect: boolean = true // 默认禁止重定向
+  public redirect: boolean = true // 默认允许重定向
   protected proxy: AxiosProxyConfig
 
   constructor(auto?: boolean, retryConfig?) {
     this.auto = auto
     this.instance = axios.create()
-    this.instance.defaults.timeout = 60 * 1000
+    this.instance.defaults.timeout = 30 * 1000
 
     if (retryConfig) {
       axiosRetry(this.instance, {
@@ -99,7 +100,7 @@ export default class Http {
 
   async request(config: AxiosRequestConfig): Promise<Response<any>> {
     return new Promise((resolve, reject) => {
-      const { url, method = 'GET', data = null, headers } = config
+      const { url, headers } = config
       if (!url) reject('Please fill in the url')
 
       if (!headers) config.headers = {}
@@ -109,7 +110,7 @@ export default class Http {
       if (cookie) {
         config.headers['Cookie'] = typeof cookie == 'string' ? cookies2Obj(cookie) : cookie
       } else {
-        config.headers['Cookie'] = obj2Cookies(this.cookies) ?? ''
+        if (obj2Cookies(this.cookies)) config.headers['Cookie'] = obj2Cookies(this.cookies)
       }
 
       if (this.auto) {
@@ -122,32 +123,36 @@ export default class Http {
         }
       }
 
-      if (this.proxy) {
-        config.proxy = this.proxy
-      }
-
       // 总协议头与请求的合并  例如JWT效验的Authentication 当然也可通过拦截器来实现
       let _headers = { ...this.headers, ...config.headers }
 
-      let _config: AxiosRequestConfig = {
+      let setting: AxiosRequestConfig = {
         ...config,
-        method,
-        data,
         headers: _headers,
         withCredentials: true,
-        maxRedirects: 5, // 始终都要重定向，因为需要获取Cookies
+        maxRedirects: 0,// this.redirect ? 5 : 0, // 始终禁止要重定向
         httpAgent: new http.Agent({ keepAlive: true }),
         httpsAgent: new https.Agent({ keepAlive: true, rejectUnauthorized: false }),
         validateStatus: function (status: number) {
-          // 无论生成状态码都不报错
           return true
         }
       }
 
-      this.instance.request(_config).then(async (res) => {
+      if (this.proxy && !config.proxy) {
+        config.proxy = this.proxy
+      }
+
+      if (config.proxy) {
+        setting.proxy = false
+        setting.httpAgent = tunnel.httpOverHttp({ proxy: this.proxy })
+        // 切记不可设置httpsAgent 不然就会出现 tunneling socket could not be established, cause=Hostname/IP does not
+        // setting.httpsAgent = tunnel.httpsOverHttp({ proxy: this.proxy })
+
+      }
+
+      this.instance.request(setting).then(async (res) => {
         if (res.headers?.['set-cookie']) {
-          let setCookies = res.headers?.['set-cookie']
-          let cookies = setCookies
+          let cookies = res.headers['set-cookie']
             .map((x) => x.split(';')[0])
             .reduce((a, val) => ((a[val.slice(0, val.indexOf('=')).trim()] = val.slice(val.indexOf('=') + 1).trim()), a), {})
 
@@ -159,18 +164,18 @@ export default class Http {
           // 禁止了重定向，则返回响应中的location 否则重新请求直到不为重定向代码
           let location: string = res.headers['location'] || ''
           if (location) {
-            if (!this.redirect) {
-              res['location'] = location
-            } else {
-              let res = this.request({ url: location, ..._config })
+            if (this.redirect) {
+              let res = this.request({ url: location, ...setting })
               resolve(res)
+            } else {
+              res['location'] = location
             }
           }
         }
 
         resolve(res)
       }).catch((err) => {
-        resolve(err)
+        reject(err)
       })
     })
   }
@@ -179,7 +184,6 @@ export default class Http {
     return this.request({
       url,
       method: 'GET',
-      data: '',
       ...config,
     })
   }
@@ -267,7 +271,7 @@ export default class Http {
     if (p) {
       let proxy: AxiosProxyConfig = {
         host: p.split(':')[0],
-        port: parseInt(p.split(':')[1])
+        port: Number(p.split(':')[1])
       }
       this.proxy = proxy
     } else {
