@@ -165,7 +165,7 @@ export default class Http {
           let location: string = res.headers['location'] || ''
           if (location) {
             if (this.redirect) {
-              let res = this.request({ url: location, ...setting })
+              let res = await this.request({ ...setting, url: location })
               resolve(res)
             } else {
               res['location'] = location
