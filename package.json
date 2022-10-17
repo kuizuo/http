@@ -1,6 +1,6 @@
 {
   "name": "@kuizuo/http",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "An HTTP class library on Node.js",
   "main": "dist/index.js",
   "type": "module",
