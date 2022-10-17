@@ -1,18 +1,20 @@
 {
   "compilerOptions": {
-    "module": "commonjs",
+    "module": "NodeNext",
+    "lib": ["es2015"],
+    "target": "ES2015",
+    "moduleResolution": "Node",
     "declaration": true,
     "removeComments": true,
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
-    "target": "es2017",
     "outDir": "./dist",
     "baseUrl": "./",
     "incremental": true,
     "paths": {
-      "@/*": ["lib/*"]
+      "~/*": ["src/*"]
     }
   },
-  "include": ["lib/*"],
+  "include": ["src/*.ts", "src/**/*.ts", "demo/*.ts", "demo/**/*.ts"],
   "exclude": ["node_modules"]
 }

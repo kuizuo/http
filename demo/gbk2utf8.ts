@@ -1,4 +1,4 @@
-import Http from '../lib/index'
+import Http from '~/http'
 import * as iconv from 'iconv-lite'
 
 let http = new Http()

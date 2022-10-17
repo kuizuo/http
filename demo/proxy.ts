@@ -1,5 +1,5 @@
 
-import Http from '../lib/index'
+import Http from '~/http'
 
 let http = new Http()
 // http.setProxy('119.101.105.249:30076') // 设置后所有请求都将使用代理ip

@@ -1,4 +1,4 @@
-import Http from '../lib/index'
+import { Http } from '~/index'
 import httpAdapters from 'axios/lib/adapters/http'
 let http = new Http()
 
