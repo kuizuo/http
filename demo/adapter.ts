@@ -1,6 +1,6 @@
-import Http from '../lib/index'
 import httpAdapters from 'axios/lib/adapters/http'
-let http = new Http()
+import Http from '../src/index'
+const http = new Http()
 
 http.instance.defaults.adapter = httpAdapters
 

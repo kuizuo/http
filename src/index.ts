@@ -1,8 +1,9 @@
-import axios, { AxiosInstance, AxiosProxyConfig, AxiosRequestConfig, AxiosResponse } from 'axios'
 import http from 'http'
 import https from 'https'
-import tunnel from 'tunnel'
 import urllib from 'url'
+import axios, { Method } from 'axios'
+import type { AxiosInstance, AxiosProxyConfig, AxiosRequestConfig, AxiosResponse } from 'axios'
+import tunnel from 'tunnel'
 import axiosRetry from 'axios-retry'
 
 const UserAgents = [
@@ -38,13 +39,12 @@ export interface Response<T = any> {
 
 export default class Http {
   public instance: AxiosInstance
-  public auto: boolean = false // 自动补全协议头
   public cookies: Cookie = {}
   public headers: Header = {} // 自带协议头  后续都必须要带上
-  public redirect: boolean = true // 默认允许重定向
+  public redirect = true // 默认允许重定向
   protected proxy: AxiosProxyConfig
 
-  constructor(auto?: boolean, retryConfig?: { retries: number; delay: number }) {
+  constructor(public auto?: boolean, retryConfig?: { retries: number; delay: number }) {
     this.instance = axios.create()
     this.auto = auto
     this.instance.defaults.timeout = 30 * 1000
@@ -57,13 +57,12 @@ export default class Http {
         },
         shouldResetTimeout: true, // 重置超时时间
         retryCondition: (error) => {
-          if (axiosRetry.isNetworkOrIdempotentRequestError(error)) {
+          if (axiosRetry.isNetworkOrIdempotentRequestError(error))
             return true
-          }
 
-          if (error.code == 'ECONNABORTED' && error.message.indexOf('timeout') != -1) {
+          if (error.code == 'ECONNABORTED' && error.message.includes('timeout'))
             return true
-          }
+
           if (['ECONNRESET', 'ETIMEDOUT'].includes(error.code)) {
             // , 'ENOTFOUND'
             return true
@@ -88,10 +87,11 @@ export default class Http {
       },
       (error) => {
         if (error.response) {
-          let res: AxiosResponse = error.response
+          const res: AxiosResponse = error.response
 
           return Promise.reject(res)
-        } else {
+        }
+        else {
           return Promise.reject(error)
         }
       },
@@ -101,46 +101,47 @@ export default class Http {
   async request(config: AxiosRequestConfig): Promise<Response<any>> {
     return new Promise((resolve, reject) => {
       const { url, headers } = config
-      if (!url) reject('Please fill in the url')
+      if (!url)
+        reject('Please fill in the url')
 
-      if (!headers) config.headers = {}
+      if (!headers)
+        config.headers = {}
 
       // 如果携带了自定义cookie则不是已有Cookies
-      const cookie = config.headers?.['Cookie']
-      if (cookie) {
-        config.headers['Cookie'] = typeof cookie === 'string' ? (cookies2Obj(cookie) as unknown as string) : cookie
-      } else {
-        if (obj2Cookies(this.cookies)) config.headers['Cookie'] = obj2Cookies(this.cookies)
-      }
+      const cookie = config.headers?.Cookie
+      if (cookie)
+        config.headers.Cookie = typeof cookie === 'string' ? (cookies2Obj(cookie) as unknown as string) : cookie
+
+      else
+      if (obj2Cookies(this.cookies))
+        config.headers.Cookie = obj2Cookies(this.cookies)
 
       if (this.auto) {
-        let { protocol, host, pathname } = urllib.parse(url)
-        if (!config.headers['Referer']) {
-          config.headers['Referer'] = protocol + '//' + host + pathname
-        }
-        if (!config.headers['Origin']) {
-          config.headers['Origin'] = protocol + '//' + host
-        }
+        const { protocol, host, pathname } = urllib.parse(url)
+        if (!config.headers.Referer)
+          config.headers.Referer = `${protocol}//${host}${pathname}`
+
+        if (!config.headers.Origin)
+          config.headers.Origin = `${protocol}//${host}`
       }
 
       // 总协议头与请求的合并  例如JWT效验的Authentication 当然也可通过拦截器来实现
-      let _headers = { ...this.headers, ...config.headers }
+      const _headers = { ...this.headers, ...config.headers }
 
-      let setting: AxiosRequestConfig = {
+      const setting: AxiosRequestConfig = {
         ...config,
         headers: _headers,
         withCredentials: true,
         maxRedirects: 0, // this.redirect ? 5 : 0, // 始终禁止要重定向
         httpAgent: new http.Agent({ keepAlive: true }),
         httpsAgent: new https.Agent({ keepAlive: true, rejectUnauthorized: false }),
-        validateStatus: function (status: number) {
+        validateStatus(status: number) {
           return true
         },
       }
 
-      if (this.proxy && !config.proxy) {
+      if (this.proxy && !config.proxy)
         config.proxy = this.proxy
-      }
 
       if (config.proxy) {
         setting.proxy = false
@@ -151,23 +152,24 @@ export default class Http {
 
       this.instance
         .request(setting)
-        .then(async (res) => {
+        .then(async (res: AxiosResponse & { cookies: Cookie }) => {
           if (res.headers?.['set-cookie']) {
-            let cookies = res.headers['set-cookie'].map((x) => x.split(';')[0]).reduce((a, val) => ((a[val.slice(0, val.indexOf('=')).trim()] = val.slice(val.indexOf('=') + 1).trim()), a), {})
+            const cookies = res.headers['set-cookie'].map(x => x.split(';')[0]).reduce((a, val) => ((a[val.slice(0, val.indexOf('=')).trim()] = val.slice(val.indexOf('=') + 1).trim()), a), {})
 
             this.cookies = { ...this.cookies, ...cookies }
-            res['cookies'] = this.cookies
+            res.cookies = this.cookies
           }
 
           if ([301, 302, 303].includes(res.status)) {
             // 禁止了重定向，则返回响应中的location 否则重新请求直到不为重定向代码
-            let location: string = res.headers['location'] || ''
+            const location: string = res.headers.location || ''
             if (location) {
               if (this.redirect) {
-                let res = await this.request({ ...setting, url: location })
+                const res = await this.request({ ...setting, url: location })
                 resolve(res)
-              } else {
-                res['location'] = location
+              }
+              else {
+                res.location = location
               }
             }
           }
@@ -180,7 +182,7 @@ export default class Http {
     })
   }
 
-  async get(url: string, config?: AxiosRequestConfig): Promise<Response<any>> {
+  async get(url: string, config?: AxiosRequestConfig) {
     return this.request({
       url,
       method: 'GET',
@@ -188,7 +190,7 @@ export default class Http {
     })
   }
 
-  async post(url: string, data: any, config?: AxiosRequestConfig): Promise<Response<any>> {
+  async post(url: string, data: any, config?: AxiosRequestConfig) {
     return this.request({
       url,
       method: 'POST',
@@ -197,7 +199,7 @@ export default class Http {
     })
   }
 
-  async put(url: string, data: any, config?: AxiosRequestConfig): Promise<Response<any>> {
+  async put(url: string, data: any, config?: AxiosRequestConfig) {
     return this.request({
       url,
       method: 'PUT',
@@ -206,7 +208,7 @@ export default class Http {
     })
   }
 
-  async delete(url: string, config?: AxiosRequestConfig): Promise<Response<any>> {
+  async delete(url: string, config?: AxiosRequestConfig) {
     return this.request({
       url,
       method: 'DELETE',
@@ -222,37 +224,37 @@ export default class Http {
     this.headers['Accept-Language'] = 'zh-CN,zh;q=0.9'
 
     this.headers['Accept-Encoding'] = 'gzip, deflate'
-    this.headers['Connection'] = 'keep-alive'
+    this.headers.Connection = 'keep-alive'
   }
 
   setCookies(cookies?: string | object) {
     if (!cookies) {
-      delete this.headers['Cookie']
+      delete this.headers.Cookie
       delete this.cookies
       return
     }
-    if (typeof cookies === 'string') {
-      this.headers['Cookie'] = cookies
-    } else {
-      this.headers['Cookie'] = obj2Cookies(cookies)
-    }
+    if (typeof cookies === 'string')
+      this.headers.Cookie = cookies
+
+    else
+      this.headers.Cookie = obj2Cookies(cookies)
   }
 
-  setHeader(key: string, val: string = '') {
-    if (val) {
+  setHeader(key: string, val = '') {
+    if (val)
       this.headers[key] = val
-    } else {
+
+    else
       delete this.headers[key]
-    }
   }
 
   setHeaders(headers: Header) {
     Object.keys(headers).forEach((h) => {
-      if (headers[h]) {
+      if (headers[h])
         this.headers[h] = headers[h]
-      } else {
+
+      else
         delete this.headers[h]
-      }
     })
   }
 
@@ -264,17 +266,18 @@ export default class Http {
     ip = ip ?? getFakeIP()
     this.headers['Client-Ip'] = ip
     this.headers['X-Forwarded-For'] = ip
-    this.headers['Remote_Addr'] = ip
+    this.headers.Remote_Addr = ip
   }
 
   setProxy(p: string | null) {
     if (p) {
-      let proxy: AxiosProxyConfig = {
+      const proxy: AxiosProxyConfig = {
         host: p.split(':')[0],
         port: Number(p.split(':')[1]),
       }
       this.proxy = proxy
-    } else {
+    }
+    else {
       this.proxy = null
     }
   }
@@ -286,7 +289,7 @@ export function cookies2Obj(cookies: string) {
 
 export function obj2Cookies(obj) {
   return Object.keys(obj)
-    .map((key) => key + '=' + obj[key])
+    .map(key => `${key}=${obj[key]}`)
     .join('; ')
 }
 
@@ -297,9 +300,9 @@ export function mergeCookie(c1, c2) {
 }
 
 export function getFakeIP() {
-  var a = Math.round(Math.random() * 250) + 1,
-    b = Math.round(Math.random() * 250) + 1,
-    c = Math.round(Math.random() * 240) + 1,
-    d = Math.round(Math.random() * 240) + 1
+  const a = Math.round(Math.random() * 250) + 1
+  const b = Math.round(Math.random() * 250) + 1
+  const c = Math.round(Math.random() * 240) + 1
+  const d = Math.round(Math.random() * 240) + 1
   return [a, b, c, d].join('.')
 }

@@ -1,16 +1,16 @@
-import axios from 'axios';
-import * as zlib from 'zlib';
+import * as zlib from 'zlib'
+import axios from 'axios'
 
 function wrap(str, num = 76) {
-  let newStr = '';
-  let index = 0;
-  while (index < str.length) {
-    newStr += str.slice(index, (index += num)) + '\r\n';
-  }
-  return newStr;
+  let newStr = ''
+  let index = 0
+  while (index < str.length)
+    newStr += `${str.slice(index, (index += num))}\r\n`
+
+  return newStr
 }
 
-let k = [
+const k = [
   '0',
   '1',
   '2',
@@ -75,71 +75,69 @@ let k = [
   'Z',
   '*',
   '!',
-];
+]
 
 function encode(str) {
-  let base64 = Buffer.from(str).toString('base64');
-  base64 = wrap(base64);
+  let base64 = Buffer.from(str).toString('base64')
+  base64 = wrap(base64)
 
-  let base64Arr = base64.split('');
+  const base64Arr = base64.split('')
 
-  let result = 'x';
+  let result = 'x'
   for (let i = 0; i < base64Arr.length; i++) {
-    let c = base64Arr[i].charCodeAt(0);
-    result += c + k[i % k.length].charCodeAt(0);
-    result += '_';
+    const c = base64Arr[i].charCodeAt(0)
+    result += c + k[i % k.length].charCodeAt(0)
+    result += '_'
   }
-  result = result.substring(0, result.length - 1);
-  //console.log(result);
-  result += 'y';
-  return result;
+  result = result.substring(0, result.length - 1)
+  // console.log(result);
+  result += 'y'
+  return result
 }
 
 function compress(bytes) {
-  return zlib.gzipSync(bytes);
+  return zlib.gzipSync(bytes)
 }
 
 function unzip(bytes) {
-  return zlib.unzipSync(bytes);
+  return zlib.unzipSync(bytes)
 }
 
 function decode(str) {
-  if (str == null) {
-    return null;
-  }
-  if (!str.startsWith('x') || !str.endsWith('y')) {
-    return '';
-  }
+  if (str == null)
+    return null
 
-  str = str.substring(1, str.length - 1);
+  if (!str.startsWith('x') || !str.endsWith('y'))
+    return ''
 
-  let split = str.split('_');
-  let result = '';
-  for (let i = 0; i < split.length; i++) {
-    result += String.fromCharCode(split[i] - k[i % k.length].charCodeAt(0));
-  }
+  str = str.substring(1, str.length - 1)
 
-  result = Buffer.from(result, 'base64').toString('utf-8');
+  const split = str.split('_')
+  let result = ''
+  for (let i = 0; i < split.length; i++)
+    result += String.fromCharCode(split[i] - k[i % k.length].charCodeAt(0))
 
-  result = JSON.stringify(JSON.parse(result));
-  return result;
+  result = Buffer.from(result, 'base64').toString('utf-8')
+
+  result = JSON.stringify(JSON.parse(result))
+  return result
 }
 
 function login() {
-  let data = { appid: '2', username: '15212345678', password: 'a123456', cpsId: 'tg001lxx', imei: 'cec79d0a-b26e-4879-b231-ebaf43299cec' };
+  const data = { appid: '2', username: '15212345678', password: 'a123456', cpsId: 'tg001lxx', imei: 'cec79d0a-b26e-4879-b231-ebaf43299cec' }
 
-  let encodeStr = encode(JSON.stringify(data));
-  let bytes = compress(Buffer.from(encodeStr));
+  const encodeStr = encode(JSON.stringify(data))
+  const bytes = compress(Buffer.from(encodeStr))
 
   axios
     .post('http://sdk.zhibaowan.cn/cdcloud2/user/login', bytes, {
       responseType: 'arraybuffer',
     })
     .then((res) => {
-      let bytes = unzip(res.data);
-      let result = decode(bytes.toString());
-      console.log(result);
-    });
+      const bytes = unzip(res.data)
+      const result = decode(bytes.toString())
+      console.log(result)
+    })
 }
 
-login();
+login()
