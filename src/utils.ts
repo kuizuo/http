@@ -1,7 +1,8 @@
-export { default as cloneDeep } from 'lodash/cloneDeep'
+import LCloneDeep from 'lodash/cloneDeep'
 
 export const isFunction = <T extends Function>(val: any): val is T => typeof val === 'function'
 
+export const cloneDeep = <T>(val: T): T => LCloneDeep(val)
 /**
  *
  * @returns {string} - The fake ip

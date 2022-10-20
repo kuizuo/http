@@ -1,24 +1,21 @@
 {
   "compilerOptions": {
+    "target": "ES2020",
     "module": "esnext",
     "moduleResolution": "node",
-    "declaration": true,
     "esModuleInterop": true,
-    "noImplicitAny": true,
-    "target": "es2017",
-    "outDir": "./dist",
-    "baseUrl": ".",
-    "incremental": true,
+    "strict": true,
+    "strictNullChecks": true,
+    "resolveJsonModule": true,
     "skipLibCheck": true,
-    "skipDefaultLibCheck": false,
     "allowSyntheticDefaultImports": true,
-    "declarationMap": false,
+    "baseUrl": "./",
     "lib": ["esnext"],
     "paths": {
-      "@/*": ["src/*"],
-      "#/*": ["types/*"]
+      "~/*": ["src/*"],
+      "@/*": ["src/*"]
     }
   },
-  "include": ["src/**/*.ts", "types/**/*.d.ts", "src/demo.js", "src/demo.js"],
+  "include": ["src/**/*.ts", "types/**/*.d.ts"],
   "exclude": ["node_modules", "dist"]
 }

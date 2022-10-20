@@ -18,8 +18,6 @@ export type AHttpRequestHeader = Record<string, AHttpHeaderValue> & {
 }
 
 export interface AHttpRequestConfig<D = any> extends AxiosRequestConfig {
-  // url?: string
-  // method?: Method | string
   data?: D
   redirect?: boolean
   headers?: AHttpRequestHeader

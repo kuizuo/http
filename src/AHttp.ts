@@ -68,6 +68,7 @@ export class AHttp {
 
     // Request interceptor configuration processing
     this.instance.interceptors.request.use(
+      // @ts-expect-error
       (config: AHttpRequestConfig) => {
         // If cancel repeat request is turned on, then cancel repeat request is prohibited
         const { ignoreCancelToken } = config
@@ -90,7 +91,8 @@ export class AHttp {
       )
 
     // Response result interceptor processing
-    this.instance.interceptors.response.use((res: AHttpResponse<any>) => {
+    // @ts-expect-error
+    this.instance.interceptors.response.use((res: AHttpResponse) => {
       res && axiosCanceler.removePending(res.config)
       if (responseInterceptors && isFunction(responseInterceptors))
         res = responseInterceptors(res)

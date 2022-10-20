@@ -1,42 +1,69 @@
 {
   "name": "@kuizuo/http",
   "type": "module",
-  "version": "0.1.5",
+  "version": "0.2.1",
+  "packageManager": "pnpm@7.11.0",
   "description": "An HTTP class library based on axios",
-  "author": "kuizuo",
-  "license": "ISC",
+  "author": {
+    "url": "https://kuizuo.cn",
+    "email": "hi@kuizuo.cn",
+    "name": "Kuizuo"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/kuizuo/http#readme",
   "repository": {
-    "type": "git",
-    "url": "git+https://github.com/kuizuo/kz-http.git"
+    "url": "https://github.com/kuizuo/http",
+    "type": "git"
+  },
+  "bugs": {
+    "url": "https://github.com/kuizuo/http/issues"
   },
   "keywords": [
     "node",
     "axios",
     "http"
   ],
-  "main": "dist/index.js",
+  "main": "dist/index.cjs",
+  "module": "dist/index.mjs",
+  "types": "index.d.ts",
+  "files": [
+    "dist",
+    "*.d.ts"
+  ],
   "scripts": {
-    "build": "tsc",
+    "build": "rollup -c",
+    "dev": "npm run build --watch",
+    "lint": "eslint .",
+    "prepublishOnly": "npm run build",
+    "release": "bumpp --commit --push --tag && pnpm -r publish --access public",
+    "typecheck": "tsc --noEmit",
     "test": "vitest"
   },
   "dependencies": {
-    "@kuizuo/eslint-config-ts": "^1.0.0",
-    "@types/crypto-js": "^4.1.1",
     "axios": "^1.1.3",
-    "axios-retry": "^3.2.4",
-    "https-proxy-agent": "^5.0.0",
-    "iconv-lite": "^0.6.3",
-    "lodash": "^4.17.21",
-    "qs": "^6.11.0",
-    "tunnel": "^0.0.6"
+    "axios-retry": "^3.2.4"
   },
   "devDependencies": {
+    "@kuizuo/eslint-config-ts": "^1.0.0",
     "@kuizuo/utils": "^0.1.3",
+    "@rollup/plugin-alias": "^4.0.0",
+    "@rollup/plugin-commonjs": "^23.0.0",
+    "@rollup/plugin-json": "^5.0.0",
+    "@rollup/plugin-node-resolve": "^15.0.0",
     "@types/lodash": "^4.14.186",
     "@types/qs": "^6.9.7",
     "@types/tunnel": "^0.0.3",
+    "bumpp": "^8.2.1",
     "eslint": "^8.25.0",
+    "https-proxy-agent": "^5.0.0",
+    "iconv-lite": "^0.6.3",
+    "lodash": "^4.17.21",
     "msw": "^0.47.4",
+    "qs": "^6.11.0",
+    "rollup": "^3.2.3",
+    "rollup-plugin-dts": "^5.0.0",
+    "rollup-plugin-esbuild": "^4.10.1",
+    "tunnel": "^0.0.6",
     "typescript": "^4.7.4",
     "vitest": "^0.24.3"
   }
