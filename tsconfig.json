@@ -3,20 +3,22 @@
     "module": "esnext",
     "moduleResolution": "node",
     "declaration": true,
-    "removeComments": true,
     "esModuleInterop": true,
-    "allowSyntheticDefaultImports": true,
     "noImplicitAny": true,
     "target": "es2017",
     "outDir": "./dist",
-    "baseUrl": "./",
+    "baseUrl": ".",
     "incremental": true,
+    "skipLibCheck": true,
+    "skipDefaultLibCheck": false,
+    "allowSyntheticDefaultImports": true,
+    "declarationMap": false,
     "lib": ["esnext"],
     "paths": {
       "@/*": ["src/*"],
       "#/*": ["types/*"]
     }
   },
-  "include": ["src/**/*.ts", "types/**/*.d.ts"],
+  "include": ["src/**/*.ts", "types/**/*.d.ts", "src/demo.js", "src/demo.js"],
   "exclude": ["node_modules", "dist"]
 }
