@@ -399,6 +399,7 @@ declare abstract class AxiosTransform {
 declare type Cookie = Record<string, string>;
 declare type AHttpHeaderValue = string | string[] | number | boolean | null;
 declare type AHttpRequestHeader = Record<string, AHttpHeaderValue> & {
+    'authorization'?: string;
     'user-agent'?: string;
     'content-type'?: string;
     'referer'?: string;

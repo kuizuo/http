@@ -6,6 +6,7 @@ export type Cookie = Record<string, string>
 type AHttpHeaderValue = string | string[] | number | boolean | null
 
 export type AHttpRequestHeader = Record<string, AHttpHeaderValue> & {
+  'authorization'?: string
   'user-agent'?: string
   'content-type'?: string
   'referer'?: string
