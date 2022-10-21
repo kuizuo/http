@@ -12,27 +12,35 @@ import { ContentTypeEnum, MethodEnum } from './constants'
 
 export class AHttp {
   public instance: AxiosInstance
-  public config: AHttpRequestConfig
-  public cookieJar!: CookieJar
+  public readonly config: AHttpRequestConfig
+  public readonly cookieJar!: CookieJar
   private currentUrl = ''
 
   constructor(config: AHttpRequestConfig = { }) {
     if (config.forbidRedirect)
       config.maxRedirects = 0
 
-    this.config = config
-
     if (config.withCookie) {
-      // new Store()
       this.cookieJar = new CookieJar()
-      this.instance = axios.create({
-        ...config,
-        httpAgent: new HttpCookieAgent({ cookies: { jar: this.cookieJar } }),
-        httpsAgent: new HttpsCookieAgent({ cookies: { jar: this.cookieJar } }),
-      })
-    }
-    else { this.instance = axios.create(config) }
 
+      config = {
+        ...config,
+        validateStatus: (status: number) => status < 500,
+        httpAgent: new HttpCookieAgent({ cookies: { jar: this.cookieJar } }),
+        httpsAgent: new HttpsCookieAgent({ cookies: { jar: this.cookieJar }, rejectUnauthorized: !config.unauthorized }),
+      }
+    }
+    else {
+      config = {
+        ...config,
+        validateStatus: (status: number) => status < 500,
+        httpAgent: new http.Agent({ keepAlive: true }),
+        httpsAgent: new https.Agent({ keepAlive: true, rejectUnauthorized: !config.unauthorized }),
+      }
+    }
+
+    this.config = config
+    this.instance = axios.create(config)
     this.setupInterceptors()
   }
 
@@ -178,17 +186,14 @@ export class AHttp {
 
     conf = this.supportFormData(conf)
 
-    const myConf: AHttpRequestConfig = {
-      validateStatus: (status: number) => status < 500,
-      httpAgent: this.config.withCookie
-        ? new HttpCookieAgent({ keepAlive: true, cookies: { jar: this.cookieJar } })
-        : new http.Agent({ keepAlive: true }),
-      httpsAgent: this.config.withCookie
-        ? new HttpsCookieAgent({ keepAlive: true, cookies: { jar: this.cookieJar }, rejectUnauthorized: !conf.unauthorized })
-        : new https.Agent({ keepAlive: true, rejectUnauthorized: !conf.unauthorized }),
+    if (conf.withCookie) {
+      conf.httpAgent = new HttpCookieAgent({ cookies: { jar: this.cookieJar } })
+      conf.httpsAgent = new HttpsCookieAgent({ cookies: { jar: this.cookieJar }, rejectUnauthorized: !config.unauthorized })
     }
-
-    conf = { ...conf, ...myConf }
+    else {
+      conf.httpAgent = new http.Agent({ keepAlive: true })
+      conf.httpsAgent = new https.Agent({ keepAlive: true, rejectUnauthorized: !config.unauthorized })
+    }
 
     this.currentUrl = conf.url || ''
     return new Promise((resolve, reject) => {
