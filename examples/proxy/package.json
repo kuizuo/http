@@ -1,0 +1,15 @@
+{
+  "name": "proxy",
+  "version": "0.1.0",
+  "description": "",
+  "author": "",
+  "license": "ISC",
+  "keywords": [],
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.mjs"
+  },
+  "dependencies": {
+    "@kuizuo/http": "^0.3.0"
+  }
+}
