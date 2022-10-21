@@ -12,7 +12,7 @@ export abstract class AxiosTransform {
   /**
    * @description: Request successfully processed
    */
-  afterRequestHook?: (res: AHttpResponse<any>) => any
+  afterRequestHook?: (res: AHttpResponse<any>) => AHttpResponse<any>
 
   /**
    * @description: 请求之前的拦截器

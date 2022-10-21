@@ -20,20 +20,21 @@ export type AHttpRequestHeader = Record<string, AHttpHeaderValue> & {
 
 export interface AHttpRequestConfig<D = any> extends AxiosRequestConfig {
   data?: D
-  redirect?: boolean
+  forbidRedirect?: boolean
+  unauthorized?: boolean
   headers?: AHttpRequestHeader
   proxy?: AxiosProxyConfig
   transform?: AxiosTransform
   ignoreCancelToken?: boolean
+  withCookie?: boolean
 }
 
 export interface AHttpResponse<T = any, D = any> extends AxiosResponse {
   data: T
   status: number
   statusText: string
-  headers: RawAxiosResponseHeaders | AxiosResponseHeaders & { location?: string }
+  headers: RawAxiosResponseHeaders | AxiosResponseHeaders
   config: AHttpRequestConfig<D>
   request?: any
-  location?: string
-  cookie?: Cookie
+  cookie?: string
 }

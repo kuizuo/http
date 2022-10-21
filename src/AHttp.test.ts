@@ -22,8 +22,9 @@ const result = {
 }
 
 const restHandlers = [
+  // @ts-expect-error
   ...['get', 'post', 'put', 'delete'].map((m: 'get' | 'post' | 'put' | 'delete') => {
-    return rest[m]('https://example.com/api/user', (req, res, ctx) => res(ctx.status(200), ctx.json(result)))
+    return rest[m]('https://example.com/api/user', (req, res, ctx) => res(ctx.status(200), ctx.json(result), ctx.cookie('name', 'ahttp')))
   }),
 ]
 
@@ -47,7 +48,7 @@ describe('AHttp', () => {
     expect(http).toBeDefined()
     expect(http).toBeInstanceOf(AHttp)
 
-    expect(http.options.headers['user-agent']).toBe('ahttp')
+    expect(http.config.headers!['user-agent']).toBe('ahttp')
   })
 
   it('http proxy', async () => {
@@ -58,9 +59,9 @@ describe('AHttp', () => {
       },
     })
 
-    expect(http.options.proxy).toBeDefined()
-    expect(http.options.proxy.host).toBe('127.0.0.1')
-    expect(http.options.proxy.port).toBe(8888)
+    expect(http.config.proxy).toBeDefined()
+    expect(http.config.proxy!.host).toBe('127.0.0.1')
+    expect(http.config.proxy!.port).toBe(8888)
   })
 
   it('http interceptor', async () => {
@@ -87,16 +88,16 @@ describe('AHttp', () => {
 
     await http.get<Result>('https://example.com/api/user')
 
-    expect(http.options.transform).toBeDefined()
-    expect(http.options.transform.beforeRequestHook).toBeDefined()
-    expect(http.options.transform.requestInterceptors).toBeDefined()
-    expect(http.options.transform.responseInterceptors).toBeDefined()
-    expect(http.options.transform.afterRequestHook).toBeDefined()
+    expect(http.config.transform).toBeDefined()
+    expect(http.config.transform!.beforeRequestHook).toBeDefined()
+    expect(http.config.transform!.requestInterceptors).toBeDefined()
+    expect(http.config.transform!.responseInterceptors).toBeDefined()
+    expect(http.config.transform!.afterRequestHook).toBeDefined()
   })
 
   it('http cancel', async () => {
     const source = axios.CancelToken.source()
-    const http = new AHttp({ })
+    const http = new AHttp({})
 
     http.get('/user/1', {
       cancelToken: source.token,
@@ -111,6 +112,21 @@ describe('AHttp', () => {
 
     // 取消请求（message 参数是可选的）
     source.cancel('cancel this request')
+  })
+
+  it('http cookie', async () => {
+    // ensure config withCookie is true in new AHttp
+    const http = new AHttp({ withCookie: true, unauthorized: true })
+
+    expect(http.config.withCookie).to.true
+    const res1 = await http.get('https://example.com/api/user')
+
+    expect(res1.cookie).toEqual('name=ahttp')
+    expect(http.getCookie()).toEqual('name=ahttp')
+    expect(http.getCookie('name')).toEqual('ahttp')
+
+    const res2 = await http.get('https://example.com/api/user')
+    expect(res2.cookie).toEqual('name=ahttp')
   })
 })
 

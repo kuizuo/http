@@ -1,6 +1,10 @@
+import http from 'http'
+import https from 'https'
 import qs from 'qs'
 import axios from 'axios'
 import type { AxiosError, AxiosInstance } from 'axios'
+import { CookieJar } from 'tough-cookie'
+import { HttpCookieAgent, HttpsCookieAgent } from 'http-cookie-agent/http'
 import type { AHttpRequestConfig, AHttpRequestHeader, AHttpResponse } from './types'
 import { AxiosCanceler } from './axiosCancel'
 import { cloneDeep, isFunction } from './utils'
@@ -8,16 +12,32 @@ import { ContentTypeEnum, MethodEnum } from './constants'
 
 export class AHttp {
   public instance: AxiosInstance
-  public options: AHttpRequestConfig
+  public config: AHttpRequestConfig
+  public cookieJar!: CookieJar
+  private currentUrl = ''
 
-  constructor(options: AHttpRequestConfig = { }) {
-    this.options = options
-    this.instance = axios.create(options)
+  constructor(config: AHttpRequestConfig = { }) {
+    if (config.forbidRedirect)
+      config.maxRedirects = 0
+
+    this.config = config
+
+    if (config.withCookie) {
+      // new Store()
+      this.cookieJar = new CookieJar()
+      this.instance = axios.create({
+        ...config,
+        httpAgent: new HttpCookieAgent({ cookies: { jar: this.cookieJar } }),
+        httpsAgent: new HttpsCookieAgent({ cookies: { jar: this.cookieJar } }),
+      })
+    }
+    else { this.instance = axios.create(config) }
+
     this.setupInterceptors()
   }
 
   private getTransform() {
-    const { transform } = this.options
+    const { transform } = this.config
     return transform
   }
 
@@ -31,9 +51,46 @@ export class AHttp {
     Object.assign(this.instance.defaults.headers, headers)
   }
 
+  /**
+   * @description: Get general header
+   */
+  getHeader(): AHttpRequestHeader | {} {
+    if (!this.instance)
+      return {}
+
+    return this.instance.defaults.headers
+  }
+
+  setCookie(cookie: string, url?: string) {
+    if (!cookie)
+      return this.cookieJar.removeAllCookiesSync()
+
+    if (typeof cookie === 'string') {
+      if (this.cookieJar && (url || this.currentUrl))
+        this.cookieJar.setCookieSync(cookie, url || this.currentUrl)
+    }
+  }
+
+  getCookie(key?: string, type?: 'json' | 'string', url?: string) {
+    if (this.cookieJar && (url || this.currentUrl)) {
+      if (key) {
+        const cookie = this.cookieJar.getCookiesSync(url || this.currentUrl).find(c => c.key === key)
+        return cookie ? cookie.value : ''
+      }
+
+      if (type === 'json')
+        return this.cookieJar.getCookiesSync(url || this.currentUrl).map(c => ({ key: c.key, value: c.value }))
+
+      else
+        return this.cookieJar.getCookieStringSync(url || this.currentUrl)
+    }
+
+    return ''
+  }
+
   // support form-data
   supportFormData(config: AHttpRequestConfig) {
-    const headers = config.headers || this.options.headers
+    const headers = config.headers || this.config.headers
     const contentType = headers?.['Content-Type'] || headers?.['content-type']
 
     if (
@@ -110,7 +167,7 @@ export class AHttp {
   }
 
   async request<T = any, D = any, R = AHttpResponse<T>>(config: AHttpRequestConfig<D>): Promise<R> {
-    let conf = cloneDeep(config)
+    let conf = cloneDeep({ ...this.config, ...config })
     const transform = this.getTransform()
 
     const { beforeRequestHook, requestCatchHook, afterRequestHook }
@@ -121,20 +178,38 @@ export class AHttp {
 
     conf = this.supportFormData(conf)
 
+    const myConf: AHttpRequestConfig = {
+      validateStatus: (status: number) => status < 500,
+      httpAgent: this.config.withCookie
+        ? new HttpCookieAgent({ keepAlive: true, cookies: { jar: this.cookieJar } })
+        : new http.Agent({ keepAlive: true }),
+      httpsAgent: this.config.withCookie
+        ? new HttpsCookieAgent({ keepAlive: true, cookies: { jar: this.cookieJar }, rejectUnauthorized: !conf.unauthorized })
+        : new https.Agent({ keepAlive: true, rejectUnauthorized: !conf.unauthorized }),
+    }
+
+    conf = { ...conf, ...myConf }
+
+    this.currentUrl = conf.url || ''
     return new Promise((resolve, reject) => {
       this.instance
         .request<T, AHttpResponse<T>, D>(conf)
-        .then((res: AHttpResponse<T>) => {
+        .then(async (res: AHttpResponse<T>) => {
           if (afterRequestHook && isFunction(afterRequestHook)) {
             try {
               const ret = afterRequestHook(res)
-              resolve(ret)
+              if (conf.withCookie)
+                ret.cookie = await this.cookieJar?.getCookieString(conf.url || '') || ''
+
+              resolve(ret as unknown as Promise<R>)
             }
             catch (err) {
               reject(err || new Error('request error!'))
             }
             return
           }
+          if (conf.withCookie)
+            res.cookie = await this.cookieJar?.getCookieString(conf.url || '') || ''
           resolve(res as unknown as Promise<R>)
         })
         .catch((e: Error | AxiosError) => {
@@ -167,3 +242,5 @@ export class AHttp {
   }
 }
 
+export const ahttp = new AHttp()
+export const createHttp = (options: AHttpRequestConfig) => new AHttp(options)
