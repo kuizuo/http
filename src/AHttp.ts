@@ -188,11 +188,11 @@ export class AHttp {
 
     if (conf.withCookie) {
       conf.httpAgent = new HttpCookieAgent({ cookies: { jar: this.cookieJar } })
-      conf.httpsAgent = new HttpsCookieAgent({ cookies: { jar: this.cookieJar }, rejectUnauthorized: !config.unauthorized })
+      conf.httpsAgent = new HttpsCookieAgent({ cookies: { jar: this.cookieJar }, rejectUnauthorized: !conf.unauthorized })
     }
     else {
       conf.httpAgent = new http.Agent({ keepAlive: true })
-      conf.httpsAgent = new https.Agent({ keepAlive: true, rejectUnauthorized: !config.unauthorized })
+      conf.httpsAgent = new https.Agent({ keepAlive: true, rejectUnauthorized: !conf.unauthorized })
     }
 
     this.currentUrl = conf.url || ''
