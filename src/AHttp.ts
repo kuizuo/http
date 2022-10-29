@@ -157,7 +157,7 @@ export class AHttp {
       conf.httpsAgent = new https.Agent({ keepAlive: true, rejectUnauthorized: !conf.unauthorized })
     }
 
-    if (conf.validateStatus)
+    if (!conf.validateStatus)
       conf.validateStatus = (status: number) => status < 500
 
     this.currentUrl = conf.url || ''
