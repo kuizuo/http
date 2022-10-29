@@ -1,7 +1,7 @@
 {
   "name": "@kuizuo/http",
   "type": "module",
-  "version": "0.3.3",
+  "version": "0.3.4",
   "packageManager": "pnpm@7.11.0",
   "description": "An HTTP class library based on axios",
   "author": {
