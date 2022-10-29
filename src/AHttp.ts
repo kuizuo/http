@@ -1,6 +1,5 @@
 import http from 'http'
 import https from 'https'
-import qs from 'qs'
 import axios from 'axios'
 import type { AxiosError, AxiosInstance } from 'axios'
 import { CookieJar } from 'tough-cookie'
@@ -8,7 +7,6 @@ import { HttpCookieAgent, HttpsCookieAgent } from 'http-cookie-agent/http'
 import type { AHttpRequestConfig, AHttpRequestHeader, AHttpResponse } from './types'
 import { AxiosCanceler } from './axiosCancel'
 import { cloneDeep, isFunction } from './utils'
-import { ContentTypeEnum, MethodEnum } from './constants'
 
 export class AHttp {
   public instance: AxiosInstance
@@ -20,24 +18,8 @@ export class AHttp {
     if (config.forbidRedirect)
       config.maxRedirects = 0
 
-    if (config.withCookie) {
+    if (config.withCookie)
       this.cookieJar = new CookieJar()
-
-      config = {
-        ...config,
-        validateStatus: (status: number) => status < 500,
-        httpAgent: new HttpCookieAgent({ cookies: { jar: this.cookieJar } }),
-        httpsAgent: new HttpsCookieAgent({ cookies: { jar: this.cookieJar }, rejectUnauthorized: !config.unauthorized }),
-      }
-    }
-    else {
-      config = {
-        ...config,
-        validateStatus: (status: number) => status < 500,
-        httpAgent: new http.Agent({ keepAlive: true }),
-        httpsAgent: new https.Agent({ keepAlive: true, rejectUnauthorized: !config.unauthorized }),
-      }
-    }
 
     this.config = config
     this.instance = axios.create(config)
@@ -94,24 +76,6 @@ export class AHttp {
     }
 
     return ''
-  }
-
-  // support form-data
-  supportFormData(config: AHttpRequestConfig) {
-    const headers = config.headers || this.config.headers
-    const contentType = headers?.['Content-Type'] || headers?.['content-type']
-
-    if (
-      contentType !== ContentTypeEnum.FORM_URLENCODED
-      || !Reflect.has(config, 'data')
-      || config.method?.toUpperCase() === MethodEnum.GET
-    )
-      return config
-
-    return {
-      ...config,
-      data: qs.stringify(config.data, { arrayFormat: 'brackets' }),
-    }
   }
 
   /**
@@ -184,8 +148,6 @@ export class AHttp {
     if (beforeRequestHook && isFunction(beforeRequestHook))
       conf = beforeRequestHook(conf)
 
-    conf = this.supportFormData(conf)
-
     if (conf.withCookie) {
       conf.httpAgent = new HttpCookieAgent({ cookies: { jar: this.cookieJar } })
       conf.httpsAgent = new HttpsCookieAgent({ cookies: { jar: this.cookieJar }, rejectUnauthorized: !conf.unauthorized })
@@ -194,6 +156,9 @@ export class AHttp {
       conf.httpAgent = new http.Agent({ keepAlive: true })
       conf.httpsAgent = new https.Agent({ keepAlive: true, rejectUnauthorized: !conf.unauthorized })
     }
+
+    if (conf.validateStatus)
+      conf.validateStatus = (status: number) => status < 500
 
     this.currentUrl = conf.url || ''
     return new Promise((resolve, reject) => {
